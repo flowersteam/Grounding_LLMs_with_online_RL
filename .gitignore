@@ -1,0 +1,8 @@
+useless/
+storage/
+slurm_logs/
+plots/
+outputs/
+notebooks/*
+!notebooks/*.ipynb
+/old_slurms/

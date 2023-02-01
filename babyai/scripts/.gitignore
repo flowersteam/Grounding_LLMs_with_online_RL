@@ -1,0 +1,4 @@
+*__pycache__
+*egg-info
+*.sh
+!run_slurm.sh

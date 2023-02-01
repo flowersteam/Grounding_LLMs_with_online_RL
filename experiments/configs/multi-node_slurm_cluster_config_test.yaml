@@ -1,0 +1,60 @@
+lamorel_args:
+  log_level: info
+  allow_subgraph_use_whith_gradient: false
+  distributed_setup_args:
+    n_rl_processes: 1
+    n_llm_processes: 4
+  accelerate_args:
+    config_file: accelerate/default_config.yaml
+    machine_rank: 0
+    num_machines: ???
+    num_processes: ???
+    main_process_ip: ???
+  llm_args:
+    model_type: ???
+    model_path: ???
+    pretrained: true
+    model_parallelism_size: ???
+    minibatch_size: ???
+    synchronize_gpus_after_scoring: false
+    empty_cuda_cache_after_scoring: false
+  updater_args:
+rl_script_args:
+  path: ???
+  seed: ???
+  number_envs: ???
+  num_steps: 100
+  max_episode_steps: 3
+  simplification_str: easy
+  frames_per_proc: 40
+  reward_shaping_beta: 0
+  discount: 0.99
+  lr: 1e-6
+  beta1: 0.9
+  beta2: 0.999
+  gae_lambda: 0.99
+  entropy_coef: 0.01
+  value_loss_coef: 0.5
+  max_grad_norm: 0.5
+  adam_eps: 1e-5
+  clip_eps: 0.2
+  epochs: 4
+  batch_size: 64
+  action_space: ???
+  saving_path_logs: ???
+  name_experiment: ???
+  name_model: ???
+  saving_path_model: ???
+  name_environment: ???
+  nbr_obs: 3
+  number_episodes: ???
+  zero_shot: ???
+  language: 'english'
+  modified_action_space: false
+  new_action_space: []
+  spm_path: ???
+  random_agent: false
+  im_learning: false
+  im_path: ???
+  get_example_trajectories: false
+  bot: false
