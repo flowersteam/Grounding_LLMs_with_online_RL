@@ -27,5 +27,5 @@ cd v0.13.2/accelerate-0.13.2; pip install -e .; cd ../..
 ```
 7. Install Lamorel
 ```
-cd language-models-for-rl/lamorel; pip install -e .; cd ../..
+git clone https://github.com/ClementRomac/lamorel.git; cd lamorel/lamorel; pip install -e .; cd ../..
 ```
