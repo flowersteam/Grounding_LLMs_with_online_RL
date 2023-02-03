@@ -22,7 +22,8 @@ class SymbolicPPOAgent(BasePPOAgent):
                  adam_eps=1e-5, clip_eps=0.2, epochs=4, batch_size=256, preprocess_obss=None, reshape_reward=None,
                  aux_info=None, use_penv=False, sampling_temperature=1, debug=False):
         super().__init__(envs, num_frames_per_proc, discount, lr, gae_lambda, entropy_coef, value_loss_coef,
-                         max_grad_norm, reshape_reward, aux_info)
+                         max_grad_norm, reshape_reward, aux_info,
+                         device=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
 
         self.acmodel = acmodel
         self.acmodel.train()

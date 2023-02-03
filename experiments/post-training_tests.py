@@ -13,38 +13,24 @@ import torch
 import gym
 import babyai.utils as utils
 import hydra
-import test_llm
 
 from babyai.paral_env_simple import ParallelEnv
 from colorama import Fore
 from lamorel import Caller, lamorel_init
 from lamorel import BaseUpdater, BaseModuleFunction
 from accelerate import Accelerator
-from main import ValueModuleFn
+from train_language_agents import ValueModuleFn
 
-from agents.drrn.drrn import DRRN_Agent
+from agents.drrn.drrn import DRRNAgent
 from agents.random_agent.random_agent import Random_agent
 from agents.bot.bot import BotAgent
+from agents.ppo.llm_ppo_agent import LLMPPOAgent
+
+from train_language_agents import reward_function, reward_function_shapped
 
 lamorel_init()
 logger = logging.getLogger(__name__)
 accelerator = Accelerator()
-
-
-# TODO add the value of the true reward *20 who should receive the final reward?
-def reward_function(subgoal_proba=None, reward=None, policy_value=None, llm_0=None):
-    if reward > 0:
-        return [20 * reward, 0]
-    else:
-        return [0, 0]
-
-
-# TODO think about a correct value for the beta of the reward shaping part
-def reward_function_shapped(subgoal_proba=None, reward=None, policy_value=None, llm_0=None):
-    if reward > 0:
-        return [20 * reward - np.log(subgoal_proba / policy_value), -np.log(subgoal_proba / policy_value)]
-    else:
-        return [-1 - np.log(subgoal_proba / policy_value), -1 - np.log(subgoal_proba / policy_value)]
 
 
 """dict_modifier_french = [{},
@@ -182,10 +168,9 @@ dict_modifier_name = ['no_modification_test']"""
 dict_dict_modifier = {'english': dict_modifier_english, 'french': dict_modifier_french}
 
 
-class updater(BaseUpdater):
+class LoadSpecificWeightsUpdater(BaseUpdater):
     def perform_update(self, contexts, candidates, _current_batch_ids, **kwargs):
         if not hasattr(self, "is_loaded"):
-
             if "im_learning" in kwargs:
                 self._llm_module.module._LLM_model.load_state_dict(torch.load(kwargs["saving_path_model"] + "/model.checkpoint"))
                 self.is_loaded = True
@@ -203,7 +188,7 @@ class updater(BaseUpdater):
                     print("Backup")
 
 
-def run_agent(args, algo, saving_path_logs, id_expe):
+def run_agent(args, algo, saving_path_logs, id_expe, n_tests):
     if args.random_agent:
         format_str = ("Language: {} | Name dict: {} | Episodes Done: {} | Reward: {: .2f} +- {: .2f}  (Min: {: .2f} Max: {: .2f}) |\
         Success Rate: {: .2f} |")
@@ -264,9 +249,9 @@ def run_agent(args, algo, saving_path_logs, id_expe):
                         json.dump(status, dst)
         else:
             if args.im_learning:
-                exps, logs = algo.generate_trajectories(d, args.language, args.im_learning)
+                exps, logs = algo.generate_trajectories(d, n_tests, args.language, args.im_learning)
             else:
-                exps, logs = algo.generate_trajectories(d, args.language)
+                exps, logs = algo.generate_trajectories(d, n_tests, args.language)
 
             return_per_episode = utils.synthesize(logs["return_per_episode"])
             success_per_episode = utils.synthesize(
@@ -304,10 +289,10 @@ def main(config_args):
     # lm server
     if config_args.lamorel_args.distributed_setup_args.n_llm_processes > 0:
         if config_args.rl_script_args.im_learning:
-            lm_server = Caller(config_args.lamorel_args, custom_updater_class=updater)
+            lm_server = Caller(config_args.lamorel_args, custom_updater_class=LoadSpecificWeightsUpdater)
         else:
-            lm_server = Caller(config_args.lamorel_args, custom_updater_class=updater,
-                           custom_module_functions={'value': ValueModuleFn(config_args.lamorel_args.llm_args.model_type)})
+            lm_server = Caller(config_args.lamorel_args, custom_updater_class=LoadSpecificWeightsUpdater,
+                               custom_module_functions={'value': ValueModuleFn(config_args.lamorel_args.llm_args.model_type)})
 
     id_expe = config_args.rl_script_args.name_experiment + \
               '_nbr_env_{}_'.format(config_args.rl_script_args.number_envs) + \
@@ -385,8 +370,7 @@ def main(config_args):
                              [[None] for _ in range(config_args.lamorel_args.distributed_setup_args.n_llm_processes)],
                              id_expe=id_expe, saving_path_model=config_args.rl_script_args.saving_path_model)
 
-        algo = test_llm.BaseAlgo(envs, lm_server, config_args.rl_script_args.number_episodes, reshape_reward,
-                                 subgoals)
+        algo = LLMPPOAgent(envs, lm_server, config_args.rl_script_args.number_episodes, reshape_reward, subgoals)
     else:
         if config_args.rl_script_args.random_agent:
             algo = Random_agent(envs=envs,
@@ -395,22 +379,20 @@ def main(config_args):
                                 number_episodes=config_args.rl_script_args.number_episodes)
         elif config_args.rl_script_args.bot:
             algo = BotAgent(envs=envs,
-                            subgoals=subgoals,
                             number_episodes=config_args.rl_script_args.number_episodes)
         else:
             if not config_args.rl_script_args.zero_shot:
-                algo = DRRN_Agent(envs, subgoals, reshape_reward, config_args.rl_script_args.spm_path,
-                                  max_steps=number_envs * 4,
-                                  number_epsiodes_test=config_args.rl_script_args.number_episodes,
-                                  saving_path=config_args.rl_script_args.saving_path_model + "/" + id_expe)
+                algo = DRRNAgent(envs, subgoals, reshape_reward, config_args.rl_script_args.spm_path,
+                                 max_steps=number_envs * 4,
+                                 saving_path=config_args.rl_script_args.saving_path_model + "/" + id_expe)
                 algo.load()
             else:
-                algo = DRRN_Agent(envs, subgoals, reshape_reward, config_args.rl_script_args.spm_path,
-                                  max_steps=number_envs * 4,
-                                  number_epsiodes_test=config_args.rl_script_args.number_episodes,
-                                  saving_path=config_args.rl_script_args.saving_path_model + "/" + id_expe)
+                algo = DRRNAgent(envs, subgoals, reshape_reward, config_args.rl_script_args.spm_path,
+                                 max_steps=number_envs * 4,
+                                 saving_path=config_args.rl_script_args.saving_path_model + "/" + id_expe)
 
-    run_agent(config_args.rl_script_args, algo, config_args.rl_script_args.saving_path_logs, id_expe)
+    run_agent(config_args.rl_script_args, algo, config_args.rl_script_args.saving_path_logs, id_expe,
+              config_args.rl_script_args.number_episodes)
     if config_args.lamorel_args.distributed_setup_args.n_llm_processes > 0:
         lm_server.close()
 

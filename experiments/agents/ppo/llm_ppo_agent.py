@@ -19,7 +19,7 @@ class LLMPPOAgent(BasePPOAgent):
                  name_experiment=None, saving_path_model=None, saving_path_logs=None, number_envs=None, subgoals=None,
                  nbr_obs=3, id_expe=None, template_test=1, aux_info=None, debug=False):
         super().__init__(envs, num_frames_per_proc, discount, lr, gae_lambda, entropy_coef, value_loss_coef,
-                         max_grad_norm, reshape_reward, aux_info)
+                         max_grad_norm, reshape_reward, aux_info, device=torch.device("cpu"))
 
         self.lm_server = lm_server
         self.llm_scoring_module_key = llm_scoring_module_key
@@ -30,8 +30,6 @@ class LLMPPOAgent(BasePPOAgent):
             self.filter_candidates_fn = lambda candidates: None
         else:
             raise NotImplementedError()
-
-        self.device = torch.device("cpu")
 
         self.nbr_obs = nbr_obs
         self.obs_queue = [deque([], maxlen=self.nbr_obs) for _ in range(self.num_procs)]
@@ -373,3 +371,158 @@ class LLMPPOAgent(BasePPOAgent):
         batches_starting_indexes = [indexes[i:i + num_indexes] for i in range(0, len(indexes), num_indexes)]
 
         return batches_starting_indexes
+
+    def generate_trajectories(self, dict_modifier, n_tests, language='english', im_learning=False, debug=False):
+        """Generates trajectories and calculates relevant metrics.
+        Runs several environments concurrently.
+        Returns
+        -------
+        exps : DictList
+            Contains actions, rewards, advantages etc as attributes.
+            Each attribute, e.g. `exps.reward` has a shape
+            (self.num_frames_per_proc * num_envs, ...). k-th block
+            of consecutive `self.num_frames_per_proc` frames contains
+            data obtained from the k-th environment. Be careful not to mix
+            data from different environments!
+        logs : dict
+            Useful stats about the training process, including the average
+            reward, policy loss, value loss, etc.
+        """
+
+        if language == "english":
+            generate_prompt = self.generate_prompt
+            subgoals = self.subgoals
+        elif language == "french":
+            generate_prompt = self.generate_prompt_french
+            subgoals = [[LLMPPOAgent.prompt_modifier(sg, self.dict_translation_action) for sg in sgs] for sgs in self.subgoals]
+
+        nbr_frames = self.num_procs
+        pbar = tqdm(range(n_tests), ascii=" " * 9 + ">", ncols=100)
+        while self.log_done_counter < n_tests:
+            # Do one agent-environment interaction
+            nbr_frames += self.num_procs
+            prompt = [self.prompt_modifier(generate_prompt(goal=self.obs[j]['mission'], subgoals=subgoals[j],
+                                                           deque_obs=self.obs_queue[j],
+                                                           deque_actions=self.acts_queue[j]), dict_modifier)
+                      for j in range(self.num_procs)]
+
+            if im_learning:
+                output = self.lm_server.score(contexts=prompt, candidates=subgoals)
+                scores = torch.stack(output)
+            else:
+                output = self.lm_server.score(contexts=prompt, candidates=subgoals,
+                                          additional_module_function_keys=['value'])
+                vals = torch.stack([_o["value"][0] for _o in output]).cpu().numpy()
+                scores = torch.stack([_o["__score"] for _o in output])
+            scores_max = torch.max(scores, dim=1)[0]
+
+            proba_dist = []
+            for j in range(len(scores)):
+                # rescaled scores to avoid the flattening effect of softmax
+                # softmax([1e-9, 1e-100, 1e-9])~[0.33, 0.33, 0.33]
+                # softmax([1e-9, 1e-100, 1e-9]*1e9)~[0.4223, 0.1554, 0.4223]
+                if scores_max[j] < 1e-45:
+                    proba_dist.append(F.softmax(torch.ones_like(scores[j]), dim=-1).unsqueeze(dim=0))
+                else:
+                    proba_dist.append(F.softmax(scores[j] / scores_max[j], dim=-1).unsqueeze(dim=0))
+
+            proba_dist = torch.cat(proba_dist, dim=0)
+            dist = Categorical(probs=proba_dist)
+            action = dist.sample()
+            # action = proba_dist.argmax(dim=1)
+            a = action.cpu().numpy()
+
+            for j in range(self.num_procs):
+                self.actions.append(subgoals[j][int(a[j])])
+                self.acts_queue[j].append(subgoals[j][int(a[j])])
+
+            obs, reward, done, self.infos = self.env.step(a)
+
+            for j in range(self.num_procs):
+                if not im_learning:
+                    self.vals.append(vals[j][0])
+                self.prompts.append(prompt[j])
+                if done[j]:
+                    # reinitialise memory of past observations and actions
+                    self.obs_queue[j].clear()
+                    self.acts_queue[j].clear()
+                self.obs_queue[j].append(self.infos[j]['descriptions'])
+
+            info = self.infos
+
+            if debug:
+                babyai.utils.viz(self.env)
+                print(babyai.utils.info(reward, heading="Reward"))
+                print(babyai.utils.info(info, "Subtasks"))
+
+            self.obs = obs
+
+            self.mask = 1 - torch.tensor(done, device=self.device, dtype=torch.float)
+
+            if self.reshape_reward is not None:
+                rewards_shaped = torch.tensor([
+                    self.reshape_reward(subgoal_proba=None, reward=reward_, policy_value=None, llm_0=None)
+                    for reward_ in reward
+                ], device=self.device)
+                self.rewards.append(rewards_shaped[:, 0])
+                self.rewards_bonus.append(rewards_shaped[:, 1])
+            else:
+                self.rewards.append(torch.tensor(reward, device=self.device))
+
+            # Update log values
+
+            self.log_episode_return += torch.tensor(reward, device=self.device, dtype=torch.float)
+            self.log_episode_reshaped_return += self.rewards[-1]
+            self.log_episode_reshaped_return_bonus += self.rewards_bonus[-1]
+            self.log_episode_num_frames += torch.ones(self.num_procs, device=self.device)
+
+            for i, done_ in enumerate(done):
+                if done_:
+                    self.log_done_counter += 1
+                    pbar.update(1)
+                    self.log_return.append(self.log_episode_return[i].item())
+                    if self.log_episode_return[i].item() > 0:
+                        print(self.obs[i]['mission'])
+                    self.log_reshaped_return.append(self.log_episode_reshaped_return[i].item())
+                    self.log_reshaped_return_bonus.append(self.log_episode_reshaped_return_bonus[i].item())
+                    self.log_num_frames.append(self.log_episode_num_frames[i].item())
+
+            self.log_episode_return *= self.mask
+            self.log_episode_reshaped_return *= self.mask
+            self.log_episode_reshaped_return_bonus *= self.mask
+            self.log_episode_num_frames *= self.mask
+
+        pbar.close()
+
+        exps = DictList()
+        exps.prompts = np.array(self.prompts)
+        # exps.images = np.stack(self.images)
+
+        # In commments below T is self.num_frames_per_proc, P is self.num_procs,
+        # D is the dimensionality
+
+        # for all tensors below, T x P -> P x T -> P * T
+        exps.actions = np.array(self.actions)
+
+        exps.vals = np.array(self.vals)
+
+        # Log some values
+
+        keep = max(self.log_done_counter, self.num_procs)
+
+        log = {
+            "return_per_episode": self.log_return[-keep:],
+            "reshaped_return_per_episode": self.log_reshaped_return[-keep:],
+            "reshaped_return_bonus_per_episode": self.log_reshaped_return_bonus[-keep:],
+            "num_frames_per_episode": self.log_num_frames[-keep:],
+            "episodes_done": self.log_done_counter,
+            "nbr_frames": nbr_frames
+        }
+
+        self.log_done_counter = 0
+        self.log_return = self.log_return[-self.num_procs:]
+        self.log_reshaped_return = self.log_reshaped_return[-self.num_procs:]
+        self.log_reshaped_return_bonus = self.log_reshaped_return_bonus[-self.num_procs:]
+        self.log_num_frames = self.log_num_frames[-self.num_procs:]
+
+        return exps, log

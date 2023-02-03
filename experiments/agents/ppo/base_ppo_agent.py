@@ -6,7 +6,7 @@ import torch
 
 class BasePPOAgent(BaseAgent):
     def __init__(self, envs, num_frames_per_proc, discount, lr, gae_lambda, entropy_coef, value_loss_coef,
-                 max_grad_norm, reshape_reward, aux_info):
+                 max_grad_norm, reshape_reward, aux_info, device):
         """
         Initializes a `BaseAlgo` instance.
 
@@ -49,7 +49,7 @@ class BasePPOAgent(BaseAgent):
         self.aux_info = aux_info
 
         # Store helpers values
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device
         self.num_procs = len(envs)
         self.num_frames = self.num_frames_per_proc * self.num_procs
 

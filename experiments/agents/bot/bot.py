@@ -8,7 +8,6 @@ class BotAgent:
         self.envs = envs
         self.nbr_envs = nbr_envs
         self.size_action_space = size_action_space
-        self.number_episodes = number_episodes
         self.returns = [0 for _ in range(self.nbr_envs)]
         self.logs = {
             "return_per_episode": [],
@@ -20,17 +19,17 @@ class BotAgent:
     def on_reset(self, env):
         return Bot(env)
 
-    def act(self, obs=None, action_choosen=None, update_internal_state=True, *args, **kwargs):
+    def act(self, action_choosen=None):
         actions = [bot.replan(action_choosen) for bot in self.bots]
         return actions
 
-    def generate_trajectories(self, dict_modifier, language='english'):
+    def generate_trajectories(self, dict_modifier, n_tests, language='english'):
         episodes_done = 0
 
-        pbar = tqdm(range(self.number_episodes), ascii=" " * 9 + ">", ncols=100)
-        while episodes_done < self.number_episodes:
+        pbar = tqdm(range(n_tests), ascii=" " * 9 + ">", ncols=100)
+        while episodes_done < n_tests:
 
-            actions = self.act(obs)
+            actions = self.act()
 
             obs, rewards, dones, infos = self.envs.step(actions)
 

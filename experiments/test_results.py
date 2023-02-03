@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def print_test_results():
-    root = '/home/tcarta/DLP/storage/logs'
+    root = ''
     list_dir = os.listdir(root)
 
     for test_name in ['no_modification_test', 'other_name_same_categories', 'adj_synonym', 'no_meaning_nouns',
