@@ -1,11 +1,7 @@
 #!/bin/sh
 export BABYAI_STORAGE='storage'
 export DLP_STORAGE='storage'
-#export PYTHONPATH=$PYTHONPATH:/gpfswork/rech/imi/uez56by/code/DLP/babyai
-#export PYTHONPATH=$PYTHONPATH:/gpfswork/rech/imi/uez56by/code/DLP/gym-minigrid
-eval "$(conda shell.bash hook)"
-conda activate dlp
-python babyai/scripts/train_rl.py \
+python -m experiments.train_symbolic_ppo \
 --arch expert_filmcnn \
 --env $1 \
 --hrl vanilla \

@@ -1,3 +1,6 @@
+'''
+This code has been taken from https://github.com/microsoft/tdqn and modified to match our needs
+'''
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -19,8 +22,6 @@ class DRRN(torch.nn.Module):
         super(DRRN, self).__init__()
         self.embedding    = nn.Embedding(vocab_size, embedding_dim)
         self.obs_encoder  = nn.GRU(embedding_dim, hidden_dim)
-        # self.look_encoder = nn.GRU(embedding_dim, hidden_dim)
-        # self.inv_encoder  = nn.GRU(embedding_dim, hidden_dim)
         self.act_encoder  = nn.GRU(embedding_dim, hidden_dim)
         self.hidden       = nn.Linear(2*hidden_dim, hidden_dim)
         self.act_scorer   = nn.Linear(hidden_dim, 1)
@@ -73,11 +74,7 @@ class DRRN(torch.nn.Module):
         act_batch = list(itertools.chain.from_iterable(act_batch))
         act_out = self.packed_rnn(act_batch, self.act_encoder)
         # Encode the various aspects of the state
-        obs_out = self.packed_rnn(state.obs, self.obs_encoder)
-        # look_out = self.packed_rnn(state.description, self.look_encoder)
-        # inv_out = self.packed_rnn(state.inventory, self.inv_encoder)
-        # state_out = torch.cat((obs_out, look_out, inv_out), dim=1)
-        state_out = obs_out
+        state_out = self.packed_rnn(state.obs, self.obs_encoder)
         # Expand the state to match the batches of actions
         state_out = torch.cat([state_out[i].repeat(j,1) for i,j in enumerate(act_sizes)], dim=0)
         z = torch.cat((state_out, act_out), dim=1) # Concat along hidden_dim

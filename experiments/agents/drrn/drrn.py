@@ -1,3 +1,6 @@
+'''
+This code has been taken from https://github.com/microsoft/tdqn and modified to match our needs
+'''
 import numpy as np
 import logging
 
@@ -160,9 +163,7 @@ class DRRN_Agent:
         return prompt
 
     def observe(self, state, act, rew, next_state, next_acts, done):
-        # self.memory.push(state, act, rew, next_state, next_acts, done)     # When using ReplayMemory
-        self.memory.push(False, state, act, rew, next_state, next_acts,
-                         done)  # When using PrioritizedReplayMemory (? PJ)
+        self.memory.push(False, state, act, rew, next_state, next_acts, done)
 
     def build_state(self, obs):
         return [State(self.sp.EncodeAsIds(o)) for o in obs]
@@ -175,7 +176,7 @@ class DRRN_Agent:
         act_values = self.network.forward(states, poss_acts)
         if sample:
             act_probs = [F.softmax(vals, dim=0) for vals in act_values]
-            act_idxs = [torch.multinomial(probs, num_samples=1).item() \
+            act_idxs = [torch.multinomial(probs, num_samples=1).item()
                         for probs in act_probs]
         else:
             act_idxs = [vals.argmax(dim=0).item() for vals in act_values]
@@ -191,7 +192,6 @@ class DRRN_Agent:
         batch = Transition(*zip(*transitions))
 
         # Compute Q(s', a') for all a'
-        # TODO: Use a target network???
         next_qvals = self.network(batch.next_state, batch.next_acts)
         # Take the max over next q-values
         next_qvals = torch.tensor([vals.max() for vals in next_qvals], device=device)
