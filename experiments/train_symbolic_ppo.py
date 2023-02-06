@@ -13,6 +13,7 @@ import time
 import datetime
 import torch
 
+import babyai_text
 import babyai.utils as utils
 from babyai.arguments import ArgumentParser
 from babyai.model import ACModel

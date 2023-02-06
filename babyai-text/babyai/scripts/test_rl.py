@@ -6,18 +6,13 @@ Script to train the agent through reinforcement learning.
 
 import os
 import logging
-import csv
-import json
 import gym
-import time
 import datetime
 import torch
 import test_PPO
 import numpy as np
 
-import babyai
 import babyai.utils as utils
-import babyai.rl
 from babyai.arguments import ArgumentParser
 from babyai.model import ACModel
 from babyai.utils.agent import ModelAgent
@@ -26,7 +21,7 @@ from babyai.shaped_env import ParallelShapedEnv
 from gym import spaces
 from instruction_handler import InstructionHandler
 from subtask_prediction import SubtaskPrediction, SubtaskDataset
-from colorama import Fore, Back, Style
+from colorama import Fore
 
 if __name__ == "__main__":
 

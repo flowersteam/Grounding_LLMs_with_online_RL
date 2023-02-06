@@ -3,11 +3,11 @@ lamorel_args:
   allow_subgraph_use_whith_gradient: true
   distributed_setup_args:
     n_rl_processes: 1
-    n_llm_processes: 1
+    n_llm_processes: 0
   accelerate_args:
     config_file: accelerate/default_config.yaml
     machine_rank: 0
-    num_machines: 2
+    num_machines: 1
   llm_args:
     model_type: seq2seq
     model_path: t5-small
@@ -45,18 +45,19 @@ rl_script_args:
   name_experiment: 'llm_mtrl'
   name_model: 'T5small'
   saving_path_model: '/home/tcarta/DLP/storage/models'
-  name_environment: 'BabyAI-MixtTestLocal-v0'
+  name_environment: 'BabyAI-MixedTestLocal-v0'
   number_episodes: 10
   language: 'english'
   load_embedding: true
   use_action_heads: false
   template_test: 1
-  zero_shot: false
+  zero_shot: true
   modified_action_space: false
-  new_action_space: ["rotate_left","rotate_right","move_ahead","take","release","switch"]
-  spm_path: "/home/tcarta/DLP/dlp/agents/drrn/spm_models/unigram_8k.model"
-  random_agent: false
+  new_action_space: #["rotate_left","rotate_right","move_ahead","take","release","switch"]
+  spm_path: "/home/cromac/Documents/Projects/PhD-Grounding-Language-Models-with-Deep-RL/Grounding_LLMs/code/experiments/agents/drrn/spm_models/unigram_8k.model"
+  random_agent: true
   get_example_trajectories: false
   nbr_obs: 3
-  im_learning: true
+  im_learning: false
   im_path: ""
+  bot: false

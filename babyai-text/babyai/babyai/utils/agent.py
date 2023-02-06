@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 import torch
 from .. import utils
 from babyai.bot import Bot
-from babyai.model import ACModel
 from random import Random
 
 

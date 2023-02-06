@@ -1,6 +1,6 @@
 *.pyc
 *__pycache__
-*egg-info
+gym_minigrid.egg-info
 trained_models
 
 # PyPI

@@ -2,8 +2,6 @@
 
 import time
 import argparse
-import gym_minigrid
-import gym
 from gym_minigrid.wrappers import *
 
 parser = argparse.ArgumentParser()

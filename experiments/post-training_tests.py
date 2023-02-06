@@ -12,6 +12,7 @@ import numpy as np
 import torch
 import gym
 import babyai.utils as utils
+import babyai_text
 import hydra
 
 from babyai.paral_env_simple import ParallelEnv

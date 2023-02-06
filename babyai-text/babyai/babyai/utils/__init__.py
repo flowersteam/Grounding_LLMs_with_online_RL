@@ -14,7 +14,7 @@ from babyai.utils.viz import watch, viz, info, clear
 def storage_dir():
     # defines the storage directory to be in the root (Same level as babyai folder)
     print(os.environ)
-    return os.environ.get("DLP_STORAGE", '.')
+    return os.environ.get("DLP_STORAGE", '')
 
 
 def create_folders_if_necessary(path):

@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 
-import time
 import argparse
-import numpy as np
-import gym
-import gym_minigrid
 from gym_minigrid.wrappers import *
 from gym_minigrid.window import Window
 

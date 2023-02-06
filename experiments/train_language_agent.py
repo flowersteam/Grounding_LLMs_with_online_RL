@@ -20,7 +20,7 @@ import gym
 import torch.nn.functional as F
 from torch.distributions import Categorical
 
-import babyai.rl
+import babyai_text
 import babyai.utils as utils
 from babyai.paral_env_simple import ParallelEnv
 

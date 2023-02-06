@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
 
 import random
-import numpy as np
-import gym
 from gym_minigrid.register import env_list
-from gym_minigrid.minigrid import Grid, OBJECT_TO_IDX
+from gym_minigrid.minigrid import Grid
 
 # Test specifically importing a specific environment
-from gym_minigrid.envs import DoorKeyEnv
 
 # Test importing wrappers
 from gym_minigrid.wrappers import *
