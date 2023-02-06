@@ -19,14 +19,14 @@ from colorama import Fore
 from lamorel import Caller, lamorel_init
 from lamorel import BaseUpdater, BaseModuleFunction
 from accelerate import Accelerator
-from train_language_agents import ValueModuleFn
+from train_language_agent import ValueModuleFn
 
 from agents.drrn.drrn import DRRNAgent
 from agents.random_agent.random_agent import Random_agent
 from agents.bot.bot import BotAgent
 from agents.ppo.llm_ppo_agent import LLMPPOAgent
 
-from train_language_agents import reward_function, reward_function_shapped
+from train_language_agent import reward_function, reward_function_shapped
 
 lamorel_init()
 logger = logging.getLogger(__name__)
@@ -237,7 +237,7 @@ def run_agent(args, algo, saving_path_logs, id_expe, n_tests):
                               'nbr_frames': 0}
 
                 while status['nbr_frames'] < args.num_steps:
-                    exps, logs = algo.generate_trajectories(d, args.language)
+                    exps, logs = algo.generate_trajectories(d, n_tests, args.language)
 
                     np.save(np_path+'_prompts_{}'.format(status['k']), exps.prompts)
                     np.save(np_path+'_actions_{}'.format(status['k']), exps.actions)
@@ -373,13 +373,9 @@ def main(config_args):
         algo = LLMPPOAgent(envs, lm_server, config_args.rl_script_args.number_episodes, reshape_reward, subgoals)
     else:
         if config_args.rl_script_args.random_agent:
-            algo = Random_agent(envs=envs,
-                                nbr_envs=number_envs,
-                                size_action_space=len(config_args.rl_script_args.action_space),
-                                number_episodes=config_args.rl_script_args.number_episodes)
+            algo = Random_agent(envs=envs, subgoals=subgoals)
         elif config_args.rl_script_args.bot:
-            algo = BotAgent(envs=envs,
-                            number_episodes=config_args.rl_script_args.number_episodes)
+            algo = BotAgent(envs=envs, subgoals=subgoals)
         else:
             if not config_args.rl_script_args.zero_shot:
                 algo = DRRNAgent(envs, subgoals, reshape_reward, config_args.rl_script_args.spm_path,

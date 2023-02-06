@@ -1,34 +1,33 @@
 import numpy as np
 from tqdm import tqdm
 
-class Random_agent:
-    def __init__(self, envs, nbr_envs, size_action_space, number_episodes):
-        self.envs = envs
-        obs, infos = self.envs.reset()
-        self.nbr_envs = nbr_envs
-        self.size_action_space = size_action_space
-        self.number_episodes = number_episodes
-        self.returns = [0 for _ in range(self.nbr_envs)]
+from experiments.agents.base_agent import BaseAgent
+
+class Random_agent(BaseAgent):
+    def __init__(self, envs, subgoals):
+        super().__init__(envs)
+        self.env.reset()
+        self.subgoals = subgoals
+        self.returns = [0 for _ in range(self.env.num_envs)]
         self.logs = {
             "return_per_episode": [],
         }
 
-    def generate_trajectories(self, dict_modifier, language='english'):
+    def generate_trajectories(self, dict_modifier, n_tests, language='english'):
         episodes_done = 0
-        pbar = tqdm(range(self.number_episodes), ascii=" " * 9 + ">", ncols=100)
-        while episodes_done < self.number_episodes:
+        pbar = tqdm(range(n_tests), ascii=" " * 9 + ">", ncols=100)
+        while episodes_done < n_tests:
+            actions = np.random.randint(low=0, high=len(self.subgoals[0]), size=(self.env.num_envs,))
 
-            actions = np.random.randint(low=0, high=self.size_action_space, size=(self.nbr_envs,))
-
-            if self.size_action_space > 6:
+            if len(self.subgoals[0]) > 6:
                 # only useful when we test the impact of the number of actions
                 real_a = np.copy(actions)
                 real_a[real_a > 6] = 6
-                obs, rewards, dones, infos = self.envs.step(real_a)
+                obs, rewards, dones, infos = self.env.step(real_a)
             else:
-                obs, rewards, dones, infos = self.envs.step(actions)
+                obs, rewards, dones, infos = self.env.step(actions)
 
-            for j in range(self.nbr_envs):
+            for j in range(self.env.num_envs):
                 self.returns[j] += rewards[j]
                 if dones[j]:
                     episodes_done += 1
@@ -39,3 +38,6 @@ class Random_agent:
 
         self.logs["episodes_done"] = episodes_done
         return None, self.logs
+
+    def update_parameters(self):
+        pass

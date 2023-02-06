@@ -1338,7 +1338,7 @@ class Level_BossLevelNoUnlock(LevelGen):
         )
 
 
-class Level_MixtTrainLocal(LevelGen):
+class Level_MixedTrainLocal(LevelGen):
     """
     Union of all instructions from PutNext, Open, Goto and PickUp.
     The agent does not need to move objects around.
@@ -1576,7 +1576,7 @@ class Level_MixtTrainLocal(LevelGen):
         )
         self.agent_dir = 0
 
-class Level_MixtTestLocal(LevelGen):
+class Level_MixedTestLocal(LevelGen):
     """
     Union of all instructions from PutNext, Open, Goto and PickUp.
     The agent does not need to move objects around.
@@ -1810,9 +1810,9 @@ class Level_MixtTestLocal(LevelGen):
         )
         self.agent_dir = 0
 
-class Level_MixtTrainLocalFrench(LevelGen):
+class Level_MixedTrainLocalFrench(LevelGen):
     """
-    Same as MixtTrainLocal but in French
+    Same as MixedTrainLocal but in French
     """
     # TODO pas encore fini
 
@@ -2044,7 +2044,7 @@ class Level_PickUpSeqPickUpLocal(LevelGen):
     - grey door
     (for memory issue our agent only used the past 3 observations)
 
-    Competencies: Seq never seen in MixtTrainLocal
+    Competencies: Seq never seen in MixedTrainLocal
     """
 
     def __init__(
@@ -2184,7 +2184,7 @@ class Level_PickUpSeqGoToLocal(LevelGen):
     - grey door
     (for memory issue our agent only used the past 3 observations)
 
-    Competencies: Seq never seen in MixtTrainLocal
+    Competencies: Seq never seen in MixedTrainLocal
     """
 
     def __init__(
@@ -2320,7 +2320,7 @@ class Level_PickUpThenGoToLocal(LevelGen):
     - grey door
     (for memory issue our agent only used the past 3 observations)
 
-    Competencies: Seq never seen in MixtTrainLocal
+    Competencies: Seq never seen in MixedTrainLocal
     """
 
     def __init__(
@@ -2451,7 +2451,7 @@ class Level_GoToAfterPickUpLocal(LevelGen):
     - grey door
     (for memory issue our agent only used the past 3 observations)
 
-    Competencies: Seq never seen in MixtTrainLocal
+    Competencies: Seq never seen in MixedTrainLocal
     """
 
     def __init__(

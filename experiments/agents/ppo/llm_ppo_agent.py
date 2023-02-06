@@ -67,28 +67,6 @@ class LLMPPOAgent(BasePPOAgent):
 
         self.experiment_path = os.path.join(self.saving_path_logs, id_expe)
 
-    @classmethod
-    def generate_prompt(cls, goal, subgoals, deque_obs, deque_actions):
-
-        ldo = len(deque_obs)
-        lda = len(deque_actions)
-
-        head_prompt = "Possible action of the agent:"
-        for sg in subgoals:
-            head_prompt += " {},".format(sg)
-        head_prompt = head_prompt[:-1]
-
-        g = " \n Goal of the agent: {}".format(goal)
-        obs = ""
-        for i in range(ldo):
-            obs += " \n Observation {}: ".format(i)
-            for d_obs in deque_obs[i]:
-                obs += "{}, ".format(d_obs)
-            obs += "\n Action {}: ".format(i)
-            if i < lda:
-                obs += "{}".format(deque_actions[i])
-        return head_prompt + g + obs
-
     def collect_experiences(self, debug=False):
         """Collects rollouts and computes advantages.
         Runs several environments concurrently. The next actions are computed
