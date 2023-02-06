@@ -12,22 +12,22 @@ We rely on the [Lamorel](https://github.com/ClementRomac/lamorel) library to use
 
 Our repository is structured as follows:
 
-📦 Grounding_LLMs_with_online_RL
+📦 Grounding_LLMs_with_online_RL  
 ┣ 📂 [`babyai-text`](babyai-text) -- *our BabyAI-Text environment*       
 ┣ 📂 [`experiments`](experiments) -- *code for our experiments*    
-┃ ┣ 📂 [`agents`](experiments/agents) -- *implementation of all our agents*
-┃ ┃ ┣ 📂 [`bot`](experiments/agents/bot)  -- *bot agent leveraging BabyAI's bot*
-┃ ┃ ┣ 📂 [`random_agent`](experiments/agents/random_agent)  -- *agent playing uniformly random*
-┃ ┃ ┣ 📂 [`drrn`](experiments/agents/drrn)  -- *DRRN agent from [here](https://github.com/microsoft/tdqn)*
-┃ ┃ ┣ 📂 [`ppo`](experiments/agents/ppo)  -- *agents using PPO*
-┃ ┃ ┃ ┣ 📜 [`symbolic_ppo_agent.py`](experiments/agents/ppo/symbolic_ppo_agent.py)  -- *SymbolicPPO adapted from BabyAI's PPO*
-┃ ┃ ┃ ┗ 📜 [`llm_ppo_agent.py`](experiments/agents/ppo/llm_ppo_agent.py)  -- *our LLM agent grounded using PPO*
+┃ ┣ 📂 [`agents`](experiments/agents) -- *implementation of all our agents*  
+┃ ┃ ┣ 📂 [`bot`](experiments/agents/bot)  -- *bot agent leveraging BabyAI's bot*  
+┃ ┃ ┣ 📂 [`random_agent`](experiments/agents/random_agent)  -- *agent playing uniformly random*  
+┃ ┃ ┣ 📂 [`drrn`](experiments/agents/drrn)  -- *DRRN agent from [here](https://github.com/microsoft/tdqn)*  
+┃ ┃ ┣ 📂 [`ppo`](experiments/agents/ppo)  -- *agents using PPO*  
+┃ ┃ ┃ ┣ 📜 [`symbolic_ppo_agent.py`](experiments/agents/ppo/symbolic_ppo_agent.py)  -- *SymbolicPPO adapted from BabyAI's PPO*  
+┃ ┃ ┃ ┗ 📜 [`llm_ppo_agent.py`](experiments/agents/ppo/llm_ppo_agent.py)  -- *our LLM agent grounded using PPO*  
 ┃ ┣ 📂 [`configs`](experiments/configs)  -- *Lamorel configs for our experiments*  
 ┃ ┣ 📂 [`slurm`](experiments/slurm) -- *utils scripts to launch our experiments on a SLURM cluster*  
-┃ ┣ 📜 [`train_language_agent.py`](experiments/train_language_agent.py) -- *train agents using BabyAI-Text (LLMs and DRRN) -> contains our implementation of PPO loss for LLMs as well as additional heads on top of LLMs* 
-┃ ┣ 📜 [`train_symbolic_ppo.py`](experiments/train_symbolic_ppo.py) -- *train SymbolicPPO on BabyAI (with BabyAI-Text's tasks)*
-┃ ┣ 📜 [`post-training_tests.py`](experiments/post-training_tests.py) -- *generalization tests of trained agents*
-┃ ┣ 📜 [`test_results.py`](experiments/test_results.py) -- *utils to format results*
+┃ ┣ 📜 [`train_language_agent.py`](experiments/train_language_agent.py) -- *train agents using BabyAI-Text (LLMs and DRRN) -> contains our implementation of PPO loss for LLMs as well as additional heads on top of LLMs*  
+┃ ┣ 📜 [`train_symbolic_ppo.py`](experiments/train_symbolic_ppo.py) -- *train SymbolicPPO on BabyAI (with BabyAI-Text's tasks)*  
+┃ ┣ 📜 [`post-training_tests.py`](experiments/post-training_tests.py) -- *generalization tests of trained agents*  
+┃ ┣ 📜 [`test_results.py`](experiments/test_results.py) -- *utils to format results*  
 ┃ ┗ 📜 [`clm_behavioral-cloning.py`](experiments/clm_behavioral-cloning.py) -- *code to perform Behavioral Cloning on an LLM using trajectories*
 
 ## Installation steps
