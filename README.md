@@ -1,6 +1,6 @@
 # Grounding Large Language Models with Online Reinforcement Learning
 
-This repository contains the code used for our paper [Grounding Large Language Models with Online Reinforcement Learning]().
+This repository contains the code used for our paper [Grounding Large Language Models with Online Reinforcement Learning](https://arxiv.org/abs/2302.02662).
 We perform functional grounding of LLMs' knowledge in BabyAI-Text: 
 ![Main schema](docs/images/main_schema.png)
 
