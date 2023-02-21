@@ -8,7 +8,7 @@ from experiments.agents.base_agent import BaseAgent
 
 class BotAgent(BaseAgent):
     def __init__(self, envs, subgoals):
-        """An agent based on a GOFAI bot."""
+        """An agent based on BabyAI's GOFAI bot."""
         self.env = envs.envs[0]
         self.subgoals = subgoals[0]
         self.logs = {

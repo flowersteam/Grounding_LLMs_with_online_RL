@@ -24,6 +24,7 @@ Our repository is structured as follows:
 ┃ ┃ ┃ ┗ 📜 [`llm_ppo_agent.py`](experiments/agents/ppo/llm_ppo_agent.py)  -- *our LLM agent grounded using PPO*  
 ┃ ┣ 📂 [`configs`](experiments/configs)  -- *Lamorel configs for our experiments*  
 ┃ ┣ 📂 [`slurm`](experiments/slurm) -- *utils scripts to launch our experiments on a SLURM cluster*  
+┃ ┣ 📂 [`campaign`](experiments/campaign) -- *SLURM scripts used to launch our experiments*  
 ┃ ┣ 📜 [`train_language_agent.py`](experiments/train_language_agent.py) -- *train agents using BabyAI-Text (LLMs and DRRN) -> contains our implementation of PPO loss for LLMs as well as additional heads on top of LLMs*  
 ┃ ┣ 📜 [`train_symbolic_ppo.py`](experiments/train_symbolic_ppo.py) -- *train SymbolicPPO on BabyAI (with BabyAI-Text's tasks)*  
 ┃ ┣ 📜 [`post-training_tests.py`](experiments/post-training_tests.py) -- *generalization tests of trained agents*  
@@ -55,3 +56,4 @@ git clone https://github.com/ClementRomac/lamorel.git; cd lamorel/lamorel; pip i
 
 ## Launch
 Please use Lamorel along with our [configs](experiments/configs).
+You can find examples of our training scripts in [campaign](experiments/campaign).

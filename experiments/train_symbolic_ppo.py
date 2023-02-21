@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Script to train the agent through reinforcement learning.
+This file is a modified version of the training script provided by BabyAI
 """
 
 import os
