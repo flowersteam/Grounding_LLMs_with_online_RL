@@ -14,10 +14,12 @@ lamorel_args:
     model_type: ???
     model_path: ???
     pretrained: true
-    model_parallelism_size: ???
     minibatch_size: ???
-    synchronize_gpus_after_scoring: false
-    empty_cuda_cache_after_scoring: false
+    parallelism:
+      use_gpu: true
+      model_parallelism_size: ???
+      synchronize_gpus_after_scoring: false
+      empty_cuda_cache_after_scoring: false
   updater_args:
 rl_script_args:
   path: ???
