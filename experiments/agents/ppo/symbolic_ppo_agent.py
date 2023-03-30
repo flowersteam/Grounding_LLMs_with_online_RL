@@ -390,3 +390,6 @@ class SymbolicPPOAgent(BasePPOAgent):
         batches_starting_indexes = [indexes[i:i + num_indexes] for i in range(0, len(indexes), num_indexes)]
 
         return batches_starting_indexes
+
+    def generate_trajectories(self, dict_modifier, n_tests, language='english', im_learning=False, debug=False):
+        raise NotImplementedError()
