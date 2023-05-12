@@ -8,7 +8,7 @@ We then perform an in-depth anaylsis of the generalization abilities of our trai
 ![Generalization schema](docs/images/generalization_tests.png)
 
 We release our [BabyAI-Text environment](babyai-text) along with the code to perform our experiments (both training agents and evaluating their performance).
-We rely on the [Lamorel](https://github.com/ClementRomac/lamorel) library to use LLMs.
+We rely on the [Lamorel](https://github.com/flowersteam/lamorel) library to use LLMs.
 
 Our repository is structured as follows:
 
