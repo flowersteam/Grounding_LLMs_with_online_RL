@@ -20,7 +20,7 @@ from colorama import Fore
 from lamorel import Caller, lamorel_init
 from lamorel import BaseUpdater, BaseModuleFunction
 from accelerate import Accelerator
-from train_language_agent import ValueModuleFn
+from train_language_agent import ValueModuleFn, LogScoringModuleFn, ActionHeadsModuleFn
 
 from agents.drrn.drrn import DRRNAgent
 from agents.random_agent.random_agent import Random_agent
@@ -292,8 +292,24 @@ def main(config_args):
         if config_args.rl_script_args.im_learning:
             lm_server = Caller(config_args.lamorel_args, custom_updater_class=LoadSpecificWeightsUpdater)
         else:
+            custom_lamorel_module_functions = {
+            'value': ValueModuleFn(config_args.lamorel_args.llm_args.model_type)
+            }
+            if config_args.rl_script_args.use_action_heads:
+                custom_lamorel_module_functions['policy_head'] = ActionHeadsModuleFn(
+                    config_args.lamorel_args.llm_args.model_type,
+                    len(config_args.rl_script_args.action_space)
+                )
+                lamorel_scoring_module_key = "policy_head"
+            else:
+                custom_lamorel_module_functions['score'] = LogScoringModuleFn(
+                    config_args.lamorel_args.llm_args.model_type
+                )
+                lamorel_scoring_module_key = "score"
+
             lm_server = Caller(config_args.lamorel_args, custom_updater_class=LoadSpecificWeightsUpdater,
-                               custom_module_functions={'value': ValueModuleFn(config_args.lamorel_args.llm_args.model_type)})
+                               custom_module_functions=custom_lamorel_module_functions
+                               )
 
     id_expe = config_args.rl_script_args.name_experiment + \
               '_nbr_env_{}_'.format(config_args.rl_script_args.number_envs) + \

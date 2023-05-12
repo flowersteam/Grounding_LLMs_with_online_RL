@@ -24,7 +24,7 @@ class LLMPPOAgent(BasePPOAgent):
         self.lm_server = lm_server
         self.llm_scoring_module_key = llm_scoring_module_key
         # Useful filter to avoid computing score of each candidate when using additional heads directly
-        if llm_scoring_module_key == "__score":
+        if llm_scoring_module_key == "score":
             self.filter_candidates_fn = lambda candidates: candidates
         elif llm_scoring_module_key == "policy_head":
             self.filter_candidates_fn = lambda candidates: None
@@ -96,29 +96,10 @@ class LLMPPOAgent(BasePPOAgent):
             output = self.lm_server.custom_module_fns(module_function_keys=[self.llm_scoring_module_key, 'value'],
                                                       contexts=prompt,
                                                       candidates=self.filter_candidates_fn(self.subgoals))
-            # output = self.lm_server.score(contexts=prompt, candidates=self.subgoals,
-            #                               additional_module_function_keys=['value'])
             scores = torch.stack([_o[self.llm_scoring_module_key] for _o in output]).squeeze()
-            scores_max = torch.max(scores, dim=1)[0]
-            """print("scores: {}".format(scores.shape))
-            print("scores_max: {}".format(scores_max.shape))"""
+            dist = Categorical(logits=scores)
             values = torch.stack([_o["value"][0] for _o in output])
-
-            proba_dist = []
-            for j in range(len(scores)):
-                if self.llm_scoring_module_key == "__score":
-                    # rescaled scores to avoid the flattening effect of softmax
-                    # softmax([1e-9, 1e-100, 1e-9])~[0.33, 0.33, 0.33]
-                    # softmax([1e-9, 1e-100, 1e-9]*1e9)~[0.4223, 0.1554, 0.4223]
-                    if scores_max[j] < 1e-45 or torch.isnan(scores_max[j]):
-                        proba_dist.append(F.softmax(torch.ones_like(scores[j]), dim=-1).unsqueeze(dim=0))
-                    else:
-                        proba_dist.append(F.softmax(scores[j] / scores_max[j], dim=-1).unsqueeze(dim=0))
-                else:
-                    proba_dist.append(F.softmax(scores[j], dim=-1).unsqueeze(dim=0))
-
-            proba_dist = torch.cat(proba_dist, dim=0)
-            dist = Categorical(probs=proba_dist)
+            
             action = dist.sample()
             a = action.cpu().numpy()
 
@@ -385,27 +366,20 @@ class LLMPPOAgent(BasePPOAgent):
                       for j in range(self.num_procs)]
 
             if im_learning:
-                output = self.lm_server.score(contexts=prompt, candidates=subgoals)
-                scores = torch.stack(output)
+                output = self.lm_server.custom_module_fns(
+                    module_function_keys=[self.llm_scoring_module_key],
+                    contexts=prompt,
+                    candidates=self.filter_candidates_fn(self.subgoals))
+                scores = torch.stack([_o[self.llm_scoring_module_key] for _o in output])
             else:
-                output = self.lm_server.score(contexts=prompt, candidates=subgoals,
-                                          additional_module_function_keys=['value'])
+                output = self.lm_server.custom_module_fns(
+                    module_function_keys=[self.llm_scoring_module_key, 'value'],
+                    contexts=prompt,
+                    candidates=self.filter_candidates_fn(self.subgoals))
+                scores = torch.stack([_o[self.llm_scoring_module_key] for _o in output])
                 vals = torch.stack([_o["value"][0] for _o in output]).cpu().numpy()
-                scores = torch.stack([_o["__score"] for _o in output])
-            scores_max = torch.max(scores, dim=1)[0]
 
-            proba_dist = []
-            for j in range(len(scores)):
-                # rescaled scores to avoid the flattening effect of softmax
-                # softmax([1e-9, 1e-100, 1e-9])~[0.33, 0.33, 0.33]
-                # softmax([1e-9, 1e-100, 1e-9]*1e9)~[0.4223, 0.1554, 0.4223]
-                if scores_max[j] < 1e-45:
-                    proba_dist.append(F.softmax(torch.ones_like(scores[j]), dim=-1).unsqueeze(dim=0))
-                else:
-                    proba_dist.append(F.softmax(scores[j] / scores_max[j], dim=-1).unsqueeze(dim=0))
-
-            proba_dist = torch.cat(proba_dist, dim=0)
-            dist = Categorical(probs=proba_dist)
+            dist = Categorical(logits=scores)
             action = dist.sample()
             # action = proba_dist.argmax(dim=1)
             a = action.cpu().numpy()
