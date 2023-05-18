@@ -80,8 +80,9 @@ class LogScoringModuleFn(BaseModuleFunction):
         masked_token_probs = tokens_logprobs.masked_fill(mask, 1.0)  # apply mask
         minibatch_probs = masked_token_probs.sum(-1)  # compute final sequences' probability
 
+        return minibatch_probs.cpu()
 
-class ValueModuleFn(BaseModuleFunction):
+class ValueHeadModuleFn(BaseModuleFunction):
     def __init__(self, model_type):
         super().__init__()
         self._model_type = model_type
@@ -96,13 +97,13 @@ class ValueModuleFn(BaseModuleFunction):
             torch.nn.Linear(1024, 1),
         ).to(self.device)
 
-    def forward(self, forward_outputs, minibatch, tokenized_context, **kwargs):
+    def forward(self, forward_outputs, minibatch, tokenized_contexts, **kwargs):
         if self._model_type == "causal":
-            model_head = forward_outputs['hidden_states'][-1][:, len(tokenized_context["input_ids"]) - 1, :]
+            model_head = forward_outputs['hidden_states'][-1][:, len(tokenized_contexts["input_ids"]) - 1, :]
         else:
             model_head = forward_outputs["decoder_hidden_states"][-1][:, 0, :]
 
-        value = self.value_head_op(model_head.to(self.device))
+        value = self.value_head_op(model_head.to(torch.float32).to(self.device))
         return value.cpu()
 
 class ActionHeadsModuleFn(BaseModuleFunction):
@@ -121,10 +122,10 @@ class ActionHeadsModuleFn(BaseModuleFunction):
             torch.nn.Linear(1024, self._action_space_size)
         ).to(self.device)
 
-    def forward(self, forward_outputs, minibatch, tokenized_context, **kwargs):
+    def forward(self, forward_outputs, minibatch, tokenized_contexts, **kwargs):
         # Get encoder's representation
         if self._model_type == "causal":
-            model_head = forward_outputs['hidden_states'][-1][0, len(tokenized_context["input_ids"]) - 1, :]
+            model_head = forward_outputs['hidden_states'][-1][0, len(tokenized_contexts["input_ids"]) - 1, :]
         else:
             model_head = forward_outputs["decoder_hidden_states"][-1][:, 0, :]
 
@@ -227,17 +228,8 @@ class PPOUpdater(BaseUpdater):
                     # Avoid calling DDP model and get stuck gathering buffers from all LLMs
                     output = self._llm_module.module([kwargs["scoring_module_key"], 'value'],
                                                      contexts=prompts, candidates=subgoals, require_grad=False)
-                    scores = torch.stack([_o[kwargs["scoring_module_key"]] for _o in output])
-                    scores_max = torch.max(scores, dim=1)[0]
-
-                    proba_dist = []
-                    for j in range(len(scores)):
-                        if scores_max[j] < 1e-45:
-                            proba_dist.append(F.softmax(torch.ones_like(scores[j]), dim=-1).unsqueeze(dim=0))
-                        else:
-                            proba_dist.append(F.softmax(scores[j] / scores_max[j], dim=-1).unsqueeze(dim=0))
-
-                    proba_dist = list(torch.cat(proba_dist).cpu().numpy().flatten())
+                    scores = torch.stack([_o[kwargs["scoring_module_key"]] for _o in output]).squeeze()
+                    proba_dist = list(scores.cpu().numpy().flatten())
 
                     csv_distrib_path = os.path.join(kwargs["experiment_path"], 'distrib.csv')
                     csv_writer = csv.writer(open(csv_distrib_path, 'a', 1))
@@ -383,7 +375,7 @@ def main(config_args):
     # lm server
     if config_args.lamorel_args.distributed_setup_args.n_llm_processes > 0:
         custom_lamorel_module_functions = {
-            'value': ValueModuleFn(config_args.lamorel_args.llm_args.model_type)
+            'value': ValueHeadModuleFn(config_args.lamorel_args.llm_args.model_type)
         }
         if config_args.rl_script_args.use_action_heads:
             custom_lamorel_module_functions['policy_head'] = ActionHeadsModuleFn(
@@ -398,7 +390,7 @@ def main(config_args):
             lamorel_scoring_module_key = "score"
 
         lamorel_init()
-        lm_server = Caller(config_args.lamorel_args, custom_updater_class=PPOUpdater,
+        lm_server = Caller(config_args.lamorel_args, custom_updater=PPOUpdater(),
                            custom_module_functions=custom_lamorel_module_functions)
 
     # Env
