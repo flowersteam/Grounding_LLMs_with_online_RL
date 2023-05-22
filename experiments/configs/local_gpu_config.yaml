@@ -3,29 +3,28 @@ lamorel_args:
   allow_subgraph_use_whith_gradient: true
   distributed_setup_args:
     n_rl_processes: 1
-    n_llm_processes: 1
+    n_llm_processes: 2
   accelerate_args:
     config_file: accelerate/default_config.yaml
     machine_rank: 0
-    num_machines: 2
+    num_machines: 3
   llm_args:
     model_type: seq2seq
     model_path: t5-small
     pretrained: true
     minibatch_size: 4
+    pre_encode_inputs: true
     parallelism:
-      use_gpu: true
+      use_gpu: false
       model_parallelism_size: 1
       synchronize_gpus_after_scoring: false
       empty_cuda_cache_after_scoring: false
-  updater_args:
 rl_script_args:
   path: ???
   seed: 1
   number_envs: 2
   num_steps: 1000
   max_episode_steps: 3
-  simplification_str: easy
   frames_per_proc: 40
   reward_shaping_beta: 0
   discount: 0.99
