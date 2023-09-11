@@ -1474,7 +1474,7 @@ class Level_PickUpSeqPickUpLocal(LevelGen):
         self.agent_dir = 0
 
 # Register the levels in this file
-register_levels(__name__, globals())
+# register_levels(__name__, globals())
 
 
 class Level_PickUpSeqGoToLocal(LevelGen):

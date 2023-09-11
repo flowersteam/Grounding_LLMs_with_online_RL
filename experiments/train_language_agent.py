@@ -14,18 +14,14 @@ from colorama import Fore
 
 import time
 
-import numpy as np
 import torch
-import gym
-import torch.nn.functional as F
 from torch.distributions import Categorical
 
-import babyai_text
-import babyai.utils as utils
-from babyai.paral_env_simple import ParallelEnv
+from environments import EnvEnum
 
-from agents.drrn.drrn import DRRNAgent
 from agents.ppo.llm_ppo_agent import LLMPPOAgent
+
+from experiments.agents.utils.scoring_utils import scores_stacking
 
 from lamorel import Caller, lamorel_init
 from lamorel import BaseUpdater, BaseModuleFunction
@@ -37,19 +33,6 @@ import hydra
 from accelerate import Accelerator
 
 accelerator = Accelerator()
-
-def reward_function(subgoal_proba=None, reward=None, policy_value=None, llm_0=None):
-    if reward > 0:
-        return [20 * reward, 0]
-    else:
-        return [0, 0]
-
-
-def reward_function_shapped(subgoal_proba=None, reward=None, policy_value=None, llm_0=None):
-    if reward > 0:
-        return [20 * reward - np.log(subgoal_proba / policy_value), -np.log(subgoal_proba / policy_value)]
-    else:
-        return [0 - np.log(subgoal_proba / policy_value), 0 - np.log(subgoal_proba / policy_value)]
 
 class LogScoringModuleFn(BaseModuleFunction):
     def __init__(self, model_type):
@@ -134,36 +117,6 @@ class ActionHeadsModuleFn(BaseModuleFunction):
 
 
 class PPOUpdater(BaseUpdater):
-    def get_test_prompts(self, subgoals, template_test):
-        head_prompt = "Possible action of the agent:"
-        for sg in subgoals:
-            head_prompt += " {},".format(sg)
-        head_prompt = head_prompt[:-1]
-
-        if template_test == 1:
-            # expected answers: go forward, turn left, turn left, toggle
-            templated_prompts = [
-                ' \n Goal of the agent: go to the green ball \n Observation 0: A wall 2 step left, A purple key 1 step left and 2 steps forward, A yellow key 1 step left and 1 step forward, A green ball 3 steps forward, A grey ball 1 step right and 5 steps forward, A green key 1 step right and 2 steps forward, A grey ball 1 step right and 1 step forward, A green key 2 steps right and 4 steps forward, A red box 2 steps right and 2 steps forward, \n Action 0: ',
-                ' \n Goal of the agent: go to the green ball \n Observation 0: A wall 2 step left, A purple key 1 step left and 2 steps forward, A yellow key 1 step left and 1 step forward, A green ball 3 steps forward, A grey ball 1 step right and 5 steps forward, A green key 1 step right and 2 steps forward, A grey ball 1 step right and 1 step forward, A green key 2 steps right and 4 steps forward, A red box 2 steps right and 2 steps forward, \n Action 0: go forward \n Observation 1: A purple key 1 step left and 1 step forward, A yellow key 1 step left, A green ball 2 steps forward, A grey ball 1 step right and 4 steps forward, A green key 1 step right and 1 step forward, A grey ball 1 step right, A green key 2 steps right and 3 steps forward, A red box 2 steps right and 1 step forward, \n Action 1: turn right \n Observation 2: A wall 2 step right, A green key 3 steps left and 2 steps forward, A green ball 2 steps left, A red box 1 step left and 2 steps forward, A green key 1 step left and 1 step forward, A grey ball 1 step forward, \n Action 2: ',
-                ' \n Goal of the agent: open the purple door \n Observation 0: You see a wall 3 steps forward, You see a wall 3 steps left, You see a yellow key 1 step right and 1 step forward, You see a locked purple door 2 steps right and 3 steps forward, You see a purple ball 3 steps right and 1 step forward, You see a green box 3 steps right, You see a purple key 2 steps left \n Action 0: ',
-                ' \n Goal of the agent: open the purple door \n Observation 0: You see a wall 3 steps forward, You see a wall 3 steps left, You see a yellow key 1 step right and 1 step forward, You see a locked purple door 2 steps right and 3 steps forward, You see a purple ball 3 steps right and 1 step forward, You see a green box 3 steps right, You see a purple key 2 steps left \n Action 0: turn left \n Observation 1: You see a wall 3 steps forward, You see a wall 3 steps right, You see a purple key 2 steps forward \n Action 1: go forward \n Observation 2: You see a wall 2 steps forward, You see a wall 3 steps right, You see a purple key 1 step forward \n Action 2: ',
-                ' \n Goal of the agent: open the purple door \n Observation 0: You carry a purple key, You see a wall 3 steps forward, You see a wall 5 steps left, You see a yellow key 1 step left and 1 step forward, You see a locked purple door 3 steps forward, You see a purple ball 1 step right and 1 step forward, You see a green box 1 step right \n Action 0: go forward \n Observation 1: You carry a purple key, You see a wall 2 steps forward, You see a wall 5 steps left, You see a yellow key 1 step left, You see a locked purple door 2 steps forward, You see a purple ball 1 step right \n Action 1: go forward \n Observation 2: You carry a purple key, You see a wall 1 step forward, You see a wall 5 steps left, You see a locked purple door 1 step forward \n Action 2: ',
-                ' \n Goal of the agent: pick up green box \n Observation 0: You see a wall 2 steps forward, You see a wall 2 steps left, You see a yellow ball 1 step left and 1 step forward, You see a green box 2 steps right \n Action 0: ',
-                ' \n Goal of the agent: pick up green box \n Observation 0: You see a wall 2 steps forward, You see a wall 2 steps left, You see a yellow ball 1 step left and 1 step forward, You see a green box 2 steps right \n Action 0: turn right \n Observation 1: You see a wall 2 steps left, You see a blue key 1 step right, You see a red ball 2 steps right and 1 step forward, You see a green box 2 steps forward \n Action 1: go forward \n Observation 2: You see a wall 2 steps left, You see a red ball 2 steps right, You see a green box 1 step forward \n Action 2: ',
-                ' \n Goal of the agent: put blue ball next to red box \n Observation 0: You carry a blue ball, You see a wall 5 steps forward, You see a wall 2 steps left, You see a grey key 1 step right and 2 steps forward, You see a red box 3 steps forward \n Action 0: go forward \n Observation 1: You carry a blue ball, You see a wall 4 steps forward, You see a wall 2 steps left, You see a grey key 1 step right and 1 step forward, You see a red box 2 steps forward \n Action 1: ',
-                ' \n Goal of the agent: pick up the blue ball then go to the red box \n Observation 0: You see a wall 3 steps forward, You see a wall 4 steps right, You see a purple key 2 steps forward, You see a red box 2 steps right, You see a blue ball 2 steps left \n Action 0: ',
-                ' \n Goal of the agent: go to the red box after you pick up the blue ball \n Observation 0: You see a wall 3 steps forward, You see a wall 4 steps right, You see a purple key 2 steps forward, You see a red box 2 steps right, You see a blue ball 2 steps left \n Action 0: ',
-                ' \n Goal of the agent: pick up the green key then pick up the the red box \n Observation 0: You carry a green key, You see a wall 4 steps forward, You see a wall 4 steps left, You see a red box 1 step left, You see a purple ball 2 steps left and 1 step forward \n Action 0:  ']
-        elif template_test == 2:
-            # expected answers: go forward, turn left
-            templated_prompts = [
-                ' \n Goal of the agent: go to the green ball \n Observation 0: A wall 2 step left, A purple key 1 step left and 2 steps forward, A yellow key 1 step left and 1 step forward, A green ball 3 steps forward, A grey ball 1 step right and 5 steps forward, A green key 1 step right and 2 steps forward, A grey ball 1 step right and 1 step forward, A green key 2 steps right and 4 steps forward, A red box 2 steps right and 2 steps forward, \n Action 0: ',
-                ' \n Goal of the agent: go to the green ball \n Observation 0: A wall 2 step left, A purple key 1 step left and 2 steps forward, A yellow key 1 step left and 1 step forward, A green ball 3 steps forward, A grey ball 1 step right and 5 steps forward, A green key 1 step right and 2 steps forward, A grey ball 1 step right and 1 step forward, A green key 2 steps right and 4 steps forward, A red box 2 steps right and 2 steps forward, \n Action 0: go forward \n Observation 1: A purple key 1 step left and 1 step forward, A yellow key 1 step left, A green ball 2 steps forward, A grey ball 1 step right and 4 steps forward, A green key 1 step right and 1 step forward, A grey ball 1 step right, A green key 2 steps right and 3 steps forward, A red box 2 steps right and 1 step forward, \n Action 1: turn right \n Observation 2: A wall 2 step right, A green key 3 steps left and 2 steps forward, A green ball 2 steps left, A red box 1 step left and 2 steps forward, A green key 1 step left and 1 step forward, A grey ball 1 step forward, \n Action 2: ']
-
-        for j in range(len(templated_prompts)):
-            templated_prompts[j] = head_prompt + templated_prompts[j]
-        return templated_prompts
-
     def perform_update(self, contexts, candidates, _current_batch_ids, **kwargs):
         # Initialize model if asked + optimizer
         if not hasattr(self, 'optimizer') and "load_fine_tuned_version" not in kwargs:
@@ -220,20 +173,20 @@ class PPOUpdater(BaseUpdater):
 
         else:
             # save the proba_dist over actions every n updates
-            if accelerator.process_index == 1 and kwargs["lm_server_update_first_call"]:
-                if kwargs["number_updates"] % 1 == 0 and candidates is not None:
-                    prompts = self.get_test_prompts(candidates[0], kwargs['template_test'])
-                    subgoals = [candidates[0] for i in range(len(prompts))]
-
-                    # Avoid calling DDP model and get stuck gathering buffers from all LLMs
-                    output = self._llm_module.module([kwargs["scoring_module_key"], 'value'],
-                                                     contexts=prompts, candidates=subgoals, require_grad=False)
-                    scores = torch.stack([_o[kwargs["scoring_module_key"]] for _o in output]).squeeze()
-                    proba_dist = list(scores.cpu().numpy().flatten())
-
-                    csv_distrib_path = os.path.join(kwargs["experiment_path"], 'distrib.csv')
-                    csv_writer = csv.writer(open(csv_distrib_path, 'a', 1))
-                    csv_writer.writerow(proba_dist)
+            # if accelerator.process_index == 1 and kwargs["lm_server_update_first_call"]:
+            #     if kwargs["number_updates"] % 1 == 0 and candidates is not None:
+            #         prompts = self.get_test_prompts(candidates[0], kwargs['template_test'])
+            #         subgoals = [candidates[0] for i in range(len(prompts))]
+            #
+            #         # Avoid calling DDP model and get stuck gathering buffers from all LLMs
+            #         output = self._llm_module.module([kwargs["scoring_module_key"], 'value'],
+            #                                          contexts=prompts, candidates=subgoals, require_grad=False)
+            #         scores = torch.stack([_o[kwargs["scoring_module_key"]] for _o in output]).squeeze()
+            #         proba_dist = list(scores.cpu().numpy().flatten())
+            #
+            #         csv_distrib_path = os.path.join(kwargs["experiment_path"], 'distrib.csv')
+            #         csv_writer = csv.writer(open(csv_distrib_path, 'a', 1))
+            #         csv_writer.writerow(proba_dist)
 
             sb = {}
             for k in ['action', 'value', 'log_prob', 'advantage', 'returnn']:
@@ -242,7 +195,7 @@ class PPOUpdater(BaseUpdater):
             # PPO update
             output = self._llm_module([kwargs["scoring_module_key"], 'value'],
                                       contexts=contexts, candidates=candidates, require_grad=True)
-            scores = torch.stack([_o[kwargs["scoring_module_key"]] for _o in output]).squeeze()
+            scores = scores_stacking([_o[kwargs["scoring_module_key"]] for _o in output])
             dist = Categorical(logits=scores)
 
             values = torch.stack([_o["value"][0] for _o in output])
@@ -395,25 +348,23 @@ def main(config_args):
 
     # Env
     name_env = config_args.rl_script_args.name_environment
-    seed = config_args.rl_script_args.seed
-    envs = []
-    subgoals = []
-    number_envs = config_args.rl_script_args.number_envs
-    list_actions = []
-    for a in config_args.rl_script_args.action_space:
-        list_actions.append(a.replace("_", " "))
-    for i in range(number_envs):
-        env = gym.make(name_env)
-        env.seed(100 * seed + i)
-        envs.append(env)
-        subgoals.append(list_actions)
+    envs = EnvEnum[name_env].value(config_args.rl_script_args)
 
-    envs = ParallelEnv(envs)
+    # seed = config_args.rl_script_args.seed
+    # envs = []
+    # subgoals = []
+    # number_envs = config_args.rl_script_args.number_envs
+    # list_actions = []
+    # for a in config_args.rl_script_args.action_space:
+    #     list_actions.append(a.replace("_", " "))
+    # for i in range(number_envs):
+    #     env = gym.make(name_env)
+    #     env.seed(100 * seed + i)
+    #     envs.append(env)
+    #     subgoals.append(list_actions)
+    #
+    # envs = ParallelEnv(envs)
 
-    if config_args.rl_script_args.reward_shaping_beta == 0:
-        reshape_reward = reward_function
-    else:
-        reshape_reward = reward_function_shapped  # TODO ad the beta
 
     id_expe = config_args.rl_script_args.name_experiment + \
               '_nbr_env_{}_'.format(config_args.rl_script_args.number_envs) + \
@@ -482,15 +433,18 @@ def main(config_args):
                            config_args.rl_script_args.value_loss_coef, config_args.rl_script_args.max_grad_norm,
                            config_args.rl_script_args.adam_eps, config_args.rl_script_args.clip_eps,
                            config_args.rl_script_args.epochs, config_args.rl_script_args.batch_size,
-                           reshape_reward,
                            config_args.rl_script_args.name_experiment,
                            config_args.rl_script_args.saving_path_model,
-                           config_args.rl_script_args.saving_path_logs, number_envs, subgoals,
+                           config_args.rl_script_args.saving_path_logs,
+                           config_args.rl_script_args.number_envs,
                            config_args.rl_script_args.nbr_obs, id_expe,
                            config_args.rl_script_args.template_test)
     else:
-        algo = DRRNAgent(envs, subgoals, reshape_reward, config_args.rl_script_args.spm_path, max_steps=number_envs * 4,
-                         saving_path=config_args.rl_script_args.saving_path_model + "/" + id_expe, save_frequency=1)
+        raise NotImplementedError()
+        # TODO handle dynamic action
+        # algo = DRRNAgent(envs, config_args.rl_script_args.spm_path, max_steps=number_envs * 4,
+        #                  saving_path=config_args.rl_script_args.saving_path_model + "/" + id_expe, save_frequency=1)
+
     run_agent(config_args.rl_script_args, algo, id_expe)
     if config_args.lamorel_args.distributed_setup_args.n_llm_processes > 0:
         lm_server.close()

@@ -6,7 +6,7 @@ import torch
 
 class BasePPOAgent(BaseAgent):
     def __init__(self, envs, num_frames_per_proc, discount, lr, gae_lambda, entropy_coef, value_loss_coef,
-                 max_grad_norm, reshape_reward, aux_info, device):
+                 max_grad_norm, aux_info, device):
         """
         Initializes a `BaseAlgo` instance.
 
@@ -29,9 +29,6 @@ class BasePPOAgent(BaseAgent):
             the weight of the value loss in the final objective
         max_grad_norm : float
             gradient will be clipped to be at most this value
-        reshape_reward : function
-            a function that shapes the reward, takes an
-            (observation, action, reward, done) tuple as an input
         aux_info : list
             a list of strings corresponding to the name of the extra information
             retrieved from the environment for supervised auxiliary losses
@@ -45,12 +42,11 @@ class BasePPOAgent(BaseAgent):
         self.entropy_coef = entropy_coef
         self.value_loss_coef = value_loss_coef
         self.max_grad_norm = max_grad_norm
-        self.reshape_reward = reshape_reward
         self.aux_info = aux_info
 
         # Store helpers values
         self.device = device
-        self.num_procs = len(envs)
+        self.num_procs = envs.n_parallel
         self.num_frames = self.num_frames_per_proc * self.num_procs
 
         # Initialize experience values
