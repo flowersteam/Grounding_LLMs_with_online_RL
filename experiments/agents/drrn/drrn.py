@@ -29,10 +29,11 @@ device = accelerator.state.device
 
 
 class DRRNAgent(BaseAgent):
-    def __init__(self, envs, spm_path, saving_path, gamma=0.9, batch_size=64, memory_size=5000000,
-                 priority_fraction=0, clip=5, embedding_dim=128, hidden_dim=128, lr=0.0001, max_steps=64,
-                 save_frequency=10):
+    def __init__(self, envs, subgoals, reshape_reward, spm_path, saving_path, gamma=0.9, batch_size=64, memory_size=5000000,
+                 priority_fraction=0, clip=5, embedding_dim=128, hidden_dim=128, lr=0.0001, max_steps=64, save_frequency=10):
         super().__init__(envs)
+        self.subgoals = subgoals
+        self.reshape_reward = reshape_reward
         self.gamma = gamma
         self.batch_size = batch_size
         self.sp = spm.SentencePieceProcessor()
@@ -52,16 +53,16 @@ class DRRNAgent(BaseAgent):
         self.obs_queue = [deque([], maxlen=3) for _ in range(self.n_envs)]
         self.acts_queue = [deque([], maxlen=2) for _ in range(self.n_envs)]
         for j in range(self.n_envs):
-            self.obs_queue[j].append(self.obs[j])
-        prompts = [self.generate_prompt(goal=self.infos[j]['mission'], subgoals=self.infos[j]['possible_actions'],
+            self.obs_queue[j].append(self.infos[j]['descriptions'])
+        prompts = [self.generate_prompt(goal=self.obs[j]['mission'], subgoals=self.subgoals[j],
                                              deque_obs=self.obs_queue[j], deque_actions=self.acts_queue[j])
                    for j in range(self.n_envs)]
         self.states = self.build_state(prompts)
-        self.encoded_actions = self.encode_actions([i["possible_actions"] for i in self.infos])
+        self.encoded_actions = self.encode_actions(self.subgoals)
         self.logs = {
             "return_per_episode": [],
             "reshaped_return_per_episode": [],
-            # "reshaped_return_bonus_per_episode": [],
+            "reshaped_return_bonus_per_episode": [],
             "num_frames_per_episode": [],
             "num_frames": self.max_steps,
             "episodes_done": 0,
@@ -144,7 +145,7 @@ class DRRNAgent(BaseAgent):
                 obs, rewards, dones, infos = self.env.step(real_a)
             else:
                 obs, rewards, dones, infos = self.env.step(action_idxs)
-            reshaped_rewards = rewards
+            reshaped_rewards = [self.reshape_reward(reward=r)[0] for r in rewards]
             for j in range(self.n_envs):
                 self.returns[j] += rewards[j]
                 self.reshaped_returns[j] += reshaped_rewards[j]
@@ -156,7 +157,7 @@ class DRRNAgent(BaseAgent):
                     self.logs["return_per_episode"].append(self.returns[j])
                     self.returns[j] = 0
                     self.logs["reshaped_return_per_episode"].append(self.reshaped_returns[j])
-                    # self.logs["reshaped_return_bonus_per_episode"].append(self.reshaped_returns[j])
+                    self.logs["reshaped_return_bonus_per_episode"].append(self.reshaped_returns[j])
                     self.reshaped_returns[j] = 0
                     # reinitialise memory of past observations and actions
                     self.obs_queue[j].clear()
@@ -225,7 +226,7 @@ class DRRNAgent(BaseAgent):
                 obs, rewards, dones, infos = self.env.step(real_a)
             else:
                 obs, rewards, dones, infos = self.env.step(action_idxs)
-            reshaped_rewards = rewards
+            reshaped_rewards = [self.reshape_reward(reward=r)[0] for r in rewards]
 
             for j in range(self.n_envs):
                 self.returns[j] += rewards[j]
@@ -239,7 +240,7 @@ class DRRNAgent(BaseAgent):
                     self.logs["return_per_episode"].append(self.returns[j])
                     self.returns[j] = 0
                     self.logs["reshaped_return_per_episode"].append(self.reshaped_returns[j])
-                    # self.logs["reshaped_return_bonus_per_episode"].append(self.reshaped_returns[j])
+                    self.logs["reshaped_return_bonus_per_episode"].append(self.reshaped_returns[j])
                     self.reshaped_returns[j] = 0
                     # reinitialise memory of past observations and actions
                     self.obs_queue[j].clear()
