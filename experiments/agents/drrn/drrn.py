@@ -57,7 +57,7 @@ class DRRNAgent(BaseAgent):
                                              deque_obs=self.obs_queue[j], deque_actions=self.acts_queue[j])
                    for j in range(self.n_envs)]
         self.states = self.build_state(prompts)
-        # self.encoded_actions = self.encode_actions([i["possible_actions"] for i in self.infos])
+        self.encoded_actions = self.encode_actions([i["possible_actions"] for i in self.infos])
         self.logs = {
             "return_per_episode": [],
             "reshaped_return_per_episode": [],
@@ -135,17 +135,15 @@ class DRRNAgent(BaseAgent):
     def update_parameters(self):
         episodes_done = 0
         for i in tqdm(range(self.max_steps // self.n_envs), ascii=" " * 9 + ">", ncols=100):
-            possible_actions = [i["possible_actions"] for i in self.infos]
-            encoded_actions = self.encode_actions(possible_actions)
-            action_ids, action_idxs, _ = self.act(self.states, encoded_actions, sample=True)
-            actions = [_actions[idx] for _actions, idx in zip([i["possible_actions"] for i in self.infos], action_idxs)]
-            # if len(self.subgoals[0]) > 6:
-            #     # only useful when we test the impact of the number of actions
-            #     real_a = np.copy(action_idxs)
-            #     real_a[real_a > 6] = 6
-            #     obs, rewards, dones, infos = self.env.step(real_a)
-            # else:
-            obs, rewards, dones, infos = self.env.step(action_idxs)
+            action_ids, action_idxs, _ = self.act(self.states, self.encoded_actions, sample=True)
+            actions = [_subgoals[idx] for _subgoals, idx in zip(self.subgoals, action_idxs)]
+            if len(self.subgoals[0]) > 6:
+                # only useful when we test the impact of the number of actions
+                real_a = np.copy(action_idxs)
+                real_a[real_a > 6] = 6
+                obs, rewards, dones, infos = self.env.step(real_a)
+            else:
+                obs, rewards, dones, infos = self.env.step(action_idxs)
             reshaped_rewards = rewards
             for j in range(self.n_envs):
                 self.returns[j] += rewards[j]
@@ -167,17 +165,15 @@ class DRRNAgent(BaseAgent):
                     self.acts_queue[j].append(actions[j])
                     self.obs_queue[j].append(infos[j]['descriptions'])
 
-            next_possible_actions = [i["possible_actions"] for i in infos]
-            next_prompts = [self.generate_prompt(goal=obs[j]['mission'], subgoals=next_possible_actions[j],
+            next_prompts = [self.generate_prompt(goal=obs[j]['mission'], subgoals=self.subgoals[j],
                                                  deque_obs=self.obs_queue[j],
                                                  deque_actions=self.acts_queue[j])
                             for j in range(self.n_envs)]
             next_states = self.build_state(next_prompts)
             for state, act, rew, next_state, next_poss_acts, done in \
-                    zip(self.states, action_ids, reshaped_rewards, next_states, encoded_actions, dones):
+                    zip(self.states, action_ids, reshaped_rewards, next_states, self.encoded_actions, dones):
                 self.observe(state, act, rew, next_state, next_poss_acts, done)
             self.states = next_states
-            self.infos = infos
             # self.logs["num_frames"] += self.n_envs
 
         loss = self.update()
