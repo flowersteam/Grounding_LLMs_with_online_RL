@@ -15,6 +15,7 @@ lamorel_args:
     model_path: ???
     pretrained: true
     minibatch_size: ???
+    pre_encode_inputs: true
     parallelism:
       use_gpu: true
       model_parallelism_size: ???
@@ -27,7 +28,6 @@ rl_script_args:
   number_envs: ???
   num_steps: 100
   max_episode_steps: 3
-  simplification_str: easy
   frames_per_proc: 40
   reward_shaping_beta: 0
   discount: 0.99
