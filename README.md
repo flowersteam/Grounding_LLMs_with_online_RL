@@ -45,11 +45,8 @@ conda install pytorch==1.12.1 torchvision==0.13.1 torchaudio==0.12.1 cudatoolkit
 pip install -r requirements.txt
 ```
 4. **Install BabyAI-Text**: See installation details in the [`babyai-text`](babyai-text) package
-6. **Install Accelerate**
-```
-cd v0.13.2/accelerate-0.13.2; pip install -e .; cd ../..
-```
-7. **Install Lamorel**
+
+5. **Install Lamorel**
 ```
 git clone https://github.com/ClementRomac/lamorel.git; cd lamorel/lamorel; pip install -e .; cd ../..
 ```

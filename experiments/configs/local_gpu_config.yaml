@@ -3,11 +3,11 @@ lamorel_args:
   allow_subgraph_use_whith_gradient: true
   distributed_setup_args:
     n_rl_processes: 1
-    n_llm_processes: 2
+    n_llm_processes: 1
   accelerate_args:
     config_file: accelerate/default_config.yaml
     machine_rank: 0
-    num_machines: 3
+    num_machines: 2
   llm_args:
     model_type: seq2seq
     model_path: t5-small
