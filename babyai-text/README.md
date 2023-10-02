@@ -18,13 +18,13 @@ pip install -e .
 
 ## New environment
 We introduce two new environments containing a mix of BabyAI's tasks (*Go to*, *Pick up*, *Put next to*, *Unlock*, *Pick up <then|after> go to*, *Pick up <then|after> pick up*):
-- **BabyAI_MixedTrainLocal**: Training tasks in a single room setup (without some objects and the *Pick up <then|after> pick up* task)
-- **BabyAI_MixedTestLocal**: Test tasks in a single room setup (including never seen objects and the *Pick up <then|after> pick up* task)
+- **BabyAI-MixedTrainLocal**: Training tasks in a single room setup (without some objects and the *Pick up <then|after> pick up* task)
+- **BabyAI-MixedTestLocal**: Test tasks in a single room setup (including never seen objects and the *Pick up <then|after> pick up* task)
 
 To use them, import our package and create the GYM environment:
 ```python
 import gym
 import babyai_text
 
-env = gym.make("BabyAI_MixedTrainLocal")
+env = gym.make("BabyAI-MixedTrainLocal")
 ```
