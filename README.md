@@ -48,7 +48,7 @@ pip install -r requirements.txt
 
 5. **Install Lamorel**
 ```
-git clone https://github.com/ClementRomac/lamorel.git; cd lamorel/lamorel; pip install -e .; cd ../..
+git clone https://github.com/flowersteam/lamorel.git; cd lamorel/lamorel; pip install -e .; cd ../..
 ```
 
 ## Launch
