@@ -1,11 +1,12 @@
 # Grounding Large Language Models with Online Reinforcement Learning
 
 This repository contains the code used for our paper [Grounding Large Language Models with Online Reinforcement Learning](https://arxiv.org/abs/2302.02662).
-We perform functional grounding of LLMs' knowledge in BabyAI-Text: 
-![Main schema](docs/images/main_schema.png)
 
-We then perform an in-depth anaylsis of the generalization abilities of our trained agents:
-![Generalization schema](docs/images/generalization_tests.png)
+You can find more information on our [website](https://sites.google.com/view/grounding-llms-with-online-rl/).
+
+
+We perform functional grounding of LLMs' knowledge in BabyAI-Text using the **GLAM** method: 
+![Main schema](docs/images/main_schema.png)
 
 We release our [BabyAI-Text environment](babyai-text) along with the code to perform our experiments (both training agents and evaluating their performance).
 We rely on the [Lamorel](https://github.com/flowersteam/lamorel) library to use LLMs.
