@@ -8,6 +8,9 @@ setup(
     packages=['babyai_text', 'babyai_text.levels'],
     install_requires=[
         'colorama',
-        'termcolor'
+        'termcolor',
+        'matplotlib',
+        'ipython',
+        'numpy==1.23.1'
     ]
 )
