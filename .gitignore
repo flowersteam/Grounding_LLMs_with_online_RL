@@ -8,3 +8,5 @@ notebooks/*
 /old_slurms/
 .idea
 .DS_Store
+*.pyc
+.hydra/*
