@@ -307,7 +307,7 @@ def main(config_args):
                 )
                 lamorel_scoring_module_key = "score"
 
-            lm_server = Caller(config_args.lamorel_args, custom_updater_class=LoadSpecificWeightsUpdater,
+            lm_server = Caller(config_args.lamorel_args, custom_updater=LoadSpecificWeightsUpdater(),
                                custom_module_functions=custom_lamorel_module_functions
                                )
 
