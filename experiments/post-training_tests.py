@@ -20,7 +20,7 @@ from colorama import Fore
 from lamorel import Caller, lamorel_init
 from lamorel import BaseUpdater, BaseModuleFunction
 from accelerate import Accelerator
-from train_language_agent import ValueModuleFn, LogScoringModuleFn, ActionHeadsModuleFn
+from train_language_agent import ValueHeadModuleFn, LogScoringModuleFn, ActionHeadsModuleFn
 
 from agents.drrn.drrn import DRRNAgent
 from agents.random_agent.random_agent import Random_agent
