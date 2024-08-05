@@ -357,6 +357,7 @@ class LLMPPOAgent(BasePPOAgent):
 
         nbr_frames = self.num_procs
         pbar = tqdm(range(n_tests), ascii=" " * 9 + ">", ncols=100)
+        actions, values, rewards, rewards_bonus = [], [], [], []
         while self.log_done_counter < n_tests:
             # Do one agent-environment interaction
             nbr_frames += self.num_procs
@@ -383,16 +384,14 @@ class LLMPPOAgent(BasePPOAgent):
             action = dist.sample()
             # action = proba_dist.argmax(dim=1)
             a = action.cpu().numpy()
-
-            for j in range(self.num_procs):
-                self.actions.append(subgoals[j][int(a[j])])
-                self.acts_queue[j].append(subgoals[j][int(a[j])])
-
             obs, reward, done, self.infos = self.env.step(a)
-
+            actions.append([])
+            values.append([])
             for j in range(self.num_procs):
+                actions[-1].append(subgoals[j][int(a[j])])
+                self.acts_queue[j].append(subgoals[j][int(a[j])])
                 if not im_learning:
-                    self.vals.append(vals[j][0])
+                    values[-1].append(vals[j][0])
                 self.prompts.append(prompt[j])
                 if done[j]:
                     # reinitialise memory of past observations and actions
@@ -416,16 +415,16 @@ class LLMPPOAgent(BasePPOAgent):
                     self.reshape_reward(subgoal_proba=None, reward=reward_, policy_value=None, llm_0=None)
                     for reward_ in reward
                 ], device=self.device)
-                self.rewards.append(rewards_shaped[:, 0])
-                self.rewards_bonus.append(rewards_shaped[:, 1])
+                rewards.append(rewards_shaped[:, 0])
+                rewards_bonus.append(rewards_shaped[:, 1])
             else:
-                self.rewards.append(torch.tensor(reward, device=self.device))
+                rewards.append(torch.tensor(reward, device=self.device))
 
             # Update log values
 
             self.log_episode_return += torch.tensor(reward, device=self.device, dtype=torch.float)
-            self.log_episode_reshaped_return += self.rewards[-1]
-            self.log_episode_reshaped_return_bonus += self.rewards_bonus[-1]
+            self.log_episode_reshaped_return += rewards[-1]
+            self.log_episode_reshaped_return_bonus += rewards_bonus[-1]
             self.log_episode_num_frames += torch.ones(self.num_procs, device=self.device)
 
             for i, done_ in enumerate(done):
@@ -454,9 +453,9 @@ class LLMPPOAgent(BasePPOAgent):
         # D is the dimensionality
 
         # for all tensors below, T x P -> P x T -> P * T
-        exps.actions = np.array(self.actions)
+        exps.actions = np.array(actions)
 
-        exps.vals = np.array(self.vals)
+        exps.vals = np.array(vals)
 
         # Log some values
 

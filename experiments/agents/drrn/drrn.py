@@ -19,7 +19,7 @@ import pickle
 
 import babyai.rl
 
-from experiments.agents.base_agent import BaseAgent
+from agents.base_agent import BaseAgent
 
 # Accelerate
 from accelerate import Accelerator

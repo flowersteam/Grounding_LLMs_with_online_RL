@@ -1,4 +1,4 @@
-from experiments.agents.base_agent import BaseAgent
+from agents.base_agent import BaseAgent
 
 from babyai.rl.utils.supervised_losses import ExtraInfoCollector
 

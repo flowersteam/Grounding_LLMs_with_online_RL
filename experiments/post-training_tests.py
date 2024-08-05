@@ -20,7 +20,7 @@ from colorama import Fore
 from lamorel import Caller, lamorel_init
 from lamorel import BaseUpdater, BaseModuleFunction
 from accelerate import Accelerator
-from train_language_agent import ValueModuleFn, LogScoringModuleFn, ActionHeadsModuleFn
+from train_language_agent import ValueHeadModuleFn, LogScoringModuleFn, ActionHeadsModuleFn
 
 from agents.drrn.drrn import DRRNAgent
 from agents.random_agent.random_agent import Random_agent
@@ -293,7 +293,7 @@ def main(config_args):
             lm_server = Caller(config_args.lamorel_args, custom_updater_class=LoadSpecificWeightsUpdater)
         else:
             custom_lamorel_module_functions = {
-            'value': ValueModuleFn(config_args.lamorel_args.llm_args.model_type)
+            'value': ValueHeadModuleFn(config_args.lamorel_args.llm_args.model_type)
             }
             if config_args.rl_script_args.use_action_heads:
                 custom_lamorel_module_functions['policy_head'] = ActionHeadsModuleFn(
@@ -307,7 +307,7 @@ def main(config_args):
                 )
                 lamorel_scoring_module_key = "score"
 
-            lm_server = Caller(config_args.lamorel_args, custom_updater_class=LoadSpecificWeightsUpdater,
+            lm_server = Caller(config_args.lamorel_args, custom_updater=LoadSpecificWeightsUpdater(),
                                custom_module_functions=custom_lamorel_module_functions
                                )
 
@@ -387,7 +387,21 @@ def main(config_args):
                              [[None] for _ in range(config_args.lamorel_args.distributed_setup_args.n_llm_processes)],
                              id_expe=id_expe, saving_path_model=config_args.rl_script_args.saving_path_model)
 
-        algo = LLMPPOAgent(envs, lm_server, config_args.rl_script_args.number_episodes, reshape_reward, subgoals)
+        algo = LLMPPOAgent(envs, lm_server, lamorel_scoring_module_key,
+                           config_args.lamorel_args.distributed_setup_args.n_llm_processes,
+                           config_args.rl_script_args.frames_per_proc,
+                           config_args.rl_script_args.discount, config_args.rl_script_args.lr,
+                           config_args.rl_script_args.beta1, config_args.rl_script_args.beta2,
+                           config_args.rl_script_args.gae_lambda, config_args.rl_script_args.entropy_coef,
+                           config_args.rl_script_args.value_loss_coef, config_args.rl_script_args.max_grad_norm,
+                           config_args.rl_script_args.adam_eps, config_args.rl_script_args.clip_eps,
+                           config_args.rl_script_args.epochs, config_args.rl_script_args.batch_size,
+                           reshape_reward,
+                           config_args.rl_script_args.name_experiment,
+                           config_args.rl_script_args.saving_path_model,
+                           config_args.rl_script_args.saving_path_logs, number_envs, subgoals,
+                           config_args.rl_script_args.nbr_obs, id_expe,
+                           config_args.rl_script_args.template_test)
     else:
         if config_args.rl_script_args.random_agent:
             algo = Random_agent(envs=envs, subgoals=subgoals)
