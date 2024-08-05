@@ -9,6 +9,11 @@ from collections import OrderedDict
 
 import logging
 
+from lamorel import Caller, lamorel_init
+from lamorel import BaseUpdater, BaseModuleFunction
+
+lamorel_init()
+
 logger = logging.getLogger(__name__)
 from colorama import Fore
 
