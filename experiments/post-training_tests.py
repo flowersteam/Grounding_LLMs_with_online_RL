@@ -387,7 +387,21 @@ def main(config_args):
                              [[None] for _ in range(config_args.lamorel_args.distributed_setup_args.n_llm_processes)],
                              id_expe=id_expe, saving_path_model=config_args.rl_script_args.saving_path_model)
 
-        algo = LLMPPOAgent(envs, lm_server, config_args.rl_script_args.number_episodes, reshape_reward, subgoals)
+        algo = LLMPPOAgent(envs, lm_server, lamorel_scoring_module_key,
+                           config_args.lamorel_args.distributed_setup_args.n_llm_processes,
+                           config_args.rl_script_args.frames_per_proc,
+                           config_args.rl_script_args.discount, config_args.rl_script_args.lr,
+                           config_args.rl_script_args.beta1, config_args.rl_script_args.beta2,
+                           config_args.rl_script_args.gae_lambda, config_args.rl_script_args.entropy_coef,
+                           config_args.rl_script_args.value_loss_coef, config_args.rl_script_args.max_grad_norm,
+                           config_args.rl_script_args.adam_eps, config_args.rl_script_args.clip_eps,
+                           config_args.rl_script_args.epochs, config_args.rl_script_args.batch_size,
+                           reshape_reward,
+                           config_args.rl_script_args.name_experiment,
+                           config_args.rl_script_args.saving_path_model,
+                           config_args.rl_script_args.saving_path_logs, number_envs, subgoals,
+                           config_args.rl_script_args.nbr_obs, id_expe,
+                           config_args.rl_script_args.template_test)
     else:
         if config_args.rl_script_args.random_agent:
             algo = Random_agent(envs=envs, subgoals=subgoals)
