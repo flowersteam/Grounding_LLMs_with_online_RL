@@ -32,11 +32,6 @@ from babyai.paral_env_simple import ParallelEnv
 from agents.drrn.drrn import DRRNAgent
 from agents.ppo.llm_ppo_agent import LLMPPOAgent
 
-from lamorel import Caller, lamorel_init
-from lamorel import BaseUpdater, BaseModuleFunction
-
-lamorel_init()
-
 import hydra
 
 from accelerate import Accelerator
