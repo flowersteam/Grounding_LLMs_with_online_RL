@@ -4,7 +4,7 @@ from collections import deque
 from tqdm import tqdm
 import numpy as np
 
-from experiments.agents.base_agent import BaseAgent
+from agents.base_agent import BaseAgent
 
 class BotAgent(BaseAgent):
     def __init__(self, envs, subgoals):
