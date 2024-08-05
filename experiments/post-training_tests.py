@@ -293,7 +293,7 @@ def main(config_args):
             lm_server = Caller(config_args.lamorel_args, custom_updater_class=LoadSpecificWeightsUpdater)
         else:
             custom_lamorel_module_functions = {
-            'value': ValueModuleFn(config_args.lamorel_args.llm_args.model_type)
+            'value': ValueHeadModuleFn(config_args.lamorel_args.llm_args.model_type)
             }
             if config_args.rl_script_args.use_action_heads:
                 custom_lamorel_module_functions['policy_head'] = ActionHeadsModuleFn(
