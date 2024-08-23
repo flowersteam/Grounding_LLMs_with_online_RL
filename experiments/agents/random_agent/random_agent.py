@@ -1,7 +1,7 @@
 import numpy as np
 from tqdm import tqdm
 
-from experiments.agents.base_agent import BaseAgent
+from agents.base_agent import BaseAgent
 
 class Random_agent(BaseAgent):
     def __init__(self, envs, subgoals):

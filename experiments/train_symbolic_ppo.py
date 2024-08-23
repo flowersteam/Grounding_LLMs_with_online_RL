@@ -25,7 +25,7 @@ from gym import spaces
 # from subtask_prediction import SubtaskPrediction, SubtaskDataset
 from colorama import Fore, Back, Style
 
-from experiments.agents.ppo.symbolic_ppo_agent import SymbolicPPOAgent
+from agents.ppo.symbolic_ppo_agent import SymbolicPPOAgent
 
 if __name__ == "__main__":
 
