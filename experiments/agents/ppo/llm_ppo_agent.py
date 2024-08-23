@@ -257,16 +257,14 @@ class LLMPPOAgent(BasePPOAgent):
         (n_procs * n_frames_per_proc) x k 2D tensors where k is the number of classes for multiclass classification
         '''
         lm_server_update_first_call = True
+        # Initialize log values
+
+        log_entropies = []
+        log_policy_losses = []
+        log_value_losses = []
+        log_grad_norms = []
+        log_losses = []
         for _ in tqdm(range(self.epochs), ascii=" " * 9 + "<", ncols=100):
-            # Initialize log values
-
-            log_entropies = []
-            log_policy_losses = []
-            log_value_losses = []
-            log_grad_norms = []
-
-            log_losses = []
-
             # Create minibatch of size self.batch_size*self.nbr_llms
             # each llm receive a batch of size batch_size
             for inds in self._get_batches_starting_indexes():
