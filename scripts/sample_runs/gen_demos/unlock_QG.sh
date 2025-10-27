@@ -1,0 +1,1 @@
+scripts/gen_ll_demos_QG.sh BabyAI-Unlock-v0 UNL

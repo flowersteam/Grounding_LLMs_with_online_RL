@@ -1,0 +1,1 @@
+scripts/test_QG_QA.sh BabyAI-PutNextLocal-v0 PNR

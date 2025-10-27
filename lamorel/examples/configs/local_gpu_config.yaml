@@ -1,0 +1,26 @@
+lamorel_args:
+  log_level: debug
+  allow_subgraph_use_whith_gradient: false
+  distributed_setup_args:
+    n_rl_processes: 1
+    n_llm_processes: 1
+  accelerate_args:
+    config_file: accelerate/default_config.yaml
+    machine_rank: 0
+    num_machines: 2
+    num_processes: 2
+  llm_args:
+    model_type: seq2seq
+    model_path: t5-small
+    pretrained: true
+    model_parallelism_size: 1
+    minibatch_size: 4
+    synchronize_gpus_after_scoring: false
+    empty_cuda_cache_after_scoring: false
+  updater_args:
+rl_script_args:
+  path: ???
+  task_idx: 13
+  num_steps: 100
+  max_episode_steps: 3
+  simplification_str: easy

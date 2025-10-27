@@ -1,0 +1,25 @@
+lamorel_args:
+  log_level: debug
+  distributed_setup_args:
+    n_rl_processes: 1
+    n_llm_processes: 1
+  accelerate_args:
+    config_file: accelerate/default_config.yaml
+    machine_rank: ???
+    main_process_ip: ???
+    num_machines: 2
+    num_processes: 2
+  llm_args:
+    model_type: ???
+    model_path: ???
+    model_parallelism_size: 4
+    minibatch_size: 8
+    synchronize_gpus_after_scoring: true
+    empty_cuda_cache_after_scoring: true
+  updater_args:
+rl_script_args:
+  path: ???
+  task_idx: 13
+  num_steps: 100
+  max_episode_steps: 3
+  simplification_str: easy

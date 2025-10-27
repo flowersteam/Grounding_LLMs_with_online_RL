@@ -1,0 +1,1 @@
+scripts/train_ll_QA.sh BabyAI-PutNextLocal-v0_biased_without BabyAI-PutNextLocal-v0_biased_without 10

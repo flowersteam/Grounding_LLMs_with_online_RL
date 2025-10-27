@@ -1,0 +1,1 @@
+scripts/gen_ll_demos_QG.sh BabyAI-PickupOpenPutNextMedium-v0 POP

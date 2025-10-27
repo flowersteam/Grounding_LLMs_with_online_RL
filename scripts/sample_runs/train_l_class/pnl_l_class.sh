@@ -1,0 +1,1 @@
+scripts/train_l_class.sh BabyAI-PutNextLocal-v0 PNR 160
